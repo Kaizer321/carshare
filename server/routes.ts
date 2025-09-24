@@ -12,6 +12,18 @@ function requireAuth(req: any, res: any, next: any) {
   next();
 }
 
+async function requireAdmin(req: any, res: any, next: any) {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  const isAdmin = await storage.isUserAdmin(req.user!.id);
+  if (!isAdmin) {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  next();
+}
+
 export function registerRoutes(app: Express): Server {
   // Setup authentication routes
   setupAuth(app);
@@ -42,7 +54,7 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
-  app.patch("/api/cars/:id/verify", requireAuth, async (req, res) => {
+  app.patch("/api/cars/:id/verify", requireAdmin, async (req, res) => {
     try {
       const { status } = req.body;
       const car = await storage.updateCarVerification(req.params.id, status);
@@ -153,6 +165,39 @@ export function registerRoutes(app: Express): Server {
       res.json(bookings);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch bookings" });
+    }
+  });
+
+  // Admin routes for car verification management
+  app.get("/api/admin/pending-cars", requireAdmin, async (req, res) => {
+    try {
+      const pendingCars = await storage.getPendingCars();
+      res.json(pendingCars);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch pending cars" });
+    }
+  });
+
+  app.get("/api/admin/cars", requireAdmin, async (req, res) => {
+    try {
+      // Get all cars for admin dashboard - you could filter by status here
+      const allCars = await storage.getPendingCars(); // For now just pending, can be expanded
+      res.json(allCars);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch cars" });
+    }
+  });
+
+  // Admin-only endpoint to promote users to admin
+  app.patch("/api/admin/users/:id/promote", requireAdmin, async (req, res) => {
+    try {
+      const user = await storage.promoteUserToAdmin(req.params.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({ message: "User promoted to admin successfully", user: { id: user.id, username: user.username, role: user.role } });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to promote user" });
     }
   });
 

@@ -17,6 +17,9 @@ export interface IStorage {
   createCar(car: InsertCar & { userId: string }): Promise<Car>;
   getCarById(id: string): Promise<Car | undefined>;
   updateCarVerification(id: string, status: string): Promise<Car | undefined>;
+  getPendingCars(): Promise<Car[]>;
+  isUserAdmin(userId: string): Promise<boolean>;
+  promoteUserToAdmin(userId: string): Promise<User | undefined>;
   
   createRide(ride: InsertRide & { driverId: string }): Promise<Ride>;
   getRideById(id: string): Promise<RideWithDetails | undefined>;
@@ -59,7 +62,10 @@ export class DatabaseStorage implements IStorage {
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db
       .insert(users)
-      .values(insertUser)
+      .values({
+        ...insertUser,
+        role: "user", // Always force new users to have user role
+      })
       .returning();
     return user;
   }
@@ -163,6 +169,24 @@ export class DatabaseStorage implements IStorage {
 
   async getRideBookings(rideId: string): Promise<Booking[]> {
     return await db.select().from(bookings).where(eq(bookings.rideId, rideId));
+  }
+
+  async getPendingCars(): Promise<Car[]> {
+    return await db.select().from(cars).where(eq(cars.verificationStatus, "pending"));
+  }
+
+  async isUserAdmin(userId: string): Promise<boolean> {
+    const [user] = await db.select().from(users).where(eq(users.id, userId));
+    return user?.role === "admin";
+  }
+
+  async promoteUserToAdmin(userId: string): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ role: "admin" })
+      .where(eq(users.id, userId))
+      .returning();
+    return user || undefined;
   }
 }
 

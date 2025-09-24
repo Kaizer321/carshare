@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   name: text("name").notNull(),
   phone: text("phone").notNull(),
+  role: text("role").notNull().default("user"), // user, admin
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -99,6 +100,7 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
+  role: true, // Never allow role to be set during registration
   createdAt: true,
 });
 
