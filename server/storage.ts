@@ -20,6 +20,7 @@ export interface IStorage {
   getPendingCars(): Promise<Car[]>;
   isUserAdmin(userId: string): Promise<boolean>;
   promoteUserToAdmin(userId: string): Promise<User | undefined>;
+  getAdminUsers(): Promise<User[]>;
   
   createRide(ride: InsertRide & { driverId: string }): Promise<Ride>;
   getRideById(id: string): Promise<RideWithDetails | undefined>;
@@ -187,6 +188,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user || undefined;
+  }
+
+  async getAdminUsers(): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.role, "admin"));
   }
 }
 

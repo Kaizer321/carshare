@@ -1,15 +1,20 @@
 import { Button } from "@/components/ui/button";
-import { Home, List, Bell, User } from "lucide-react";
+import { Home, List, Bell, User, Shield } from "lucide-react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 export function BottomNavigation() {
   const [location] = useLocation();
+  const { user } = useAuth();
+  
+  const isAdmin = user?.role === "admin";
 
   const navItems = [
     { icon: Home, label: "Home", path: "/" },
     { icon: List, label: "My Rides", path: "/my-rides" },
     { icon: Bell, label: "Notifications", path: "/notifications" },
     { icon: User, label: "Profile", path: "/profile" },
+    ...(isAdmin ? [{ icon: Shield, label: "Admin", path: "/admin" }] : []),
   ];
 
   return (

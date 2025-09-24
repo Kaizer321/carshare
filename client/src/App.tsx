@@ -12,6 +12,7 @@ import SearchResults from "./pages/search-results";
 import RideDetails from "./pages/ride-details";
 import CarRegistration from "./pages/car-registration";
 import CreateRide from "./pages/create-ride";
+import { AdminDashboard } from "./pages/admin-dashboard";
 
 function Router() {
   return (
@@ -21,6 +22,7 @@ function Router() {
       <ProtectedRoute path="/ride/:id" component={RideDetails} />
       <ProtectedRoute path="/car-registration" component={CarRegistration} />
       <ProtectedRoute path="/create-ride" component={CreateRide} />
+      <ProtectedRoute path="/admin" component={AdminDashboard} />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />
     </Switch>

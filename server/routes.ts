@@ -201,6 +201,50 @@ export function registerRoutes(app: Express): Server {
     }
   });
 
+  // Secure bootstrap endpoint for creating the first admin - requires secret token
+  app.post("/api/admin/bootstrap", async (req, res) => {
+    try {
+      // Require a bootstrap secret token for security
+      const { userId, bootstrapSecret } = req.body;
+      
+      if (!bootstrapSecret) {
+        return res.status(400).json({ message: "bootstrapSecret is required" });
+      }
+      
+      // Check the bootstrap secret (must be set in environment)
+      const expectedSecret = process.env.BOOTSTRAP_SECRET;
+      if (!expectedSecret) {
+        return res.status(503).json({ message: "Bootstrap secret not configured. Set BOOTSTRAP_SECRET environment variable." });
+      }
+      
+      if (bootstrapSecret !== expectedSecret) {
+        return res.status(403).json({ message: "Invalid bootstrap secret" });
+      }
+
+      // Check if any admin users already exist
+      const existingAdmins = await storage.getAdminUsers();
+      if (existingAdmins.length > 0) {
+        return res.status(403).json({ message: "Admin users already exist. Bootstrap disabled." });
+      }
+
+      if (!userId) {
+        return res.status(400).json({ message: "userId is required" });
+      }
+
+      const user = await storage.promoteUserToAdmin(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({ 
+        message: "First admin user created successfully. Bootstrap is now disabled.",
+        user: { id: user.id, username: user.username, role: user.role }
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create bootstrap admin" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
